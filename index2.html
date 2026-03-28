@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>For You ❤️</title>
+    <!-- Tailwind CSS v4 -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&family=Playfair+Display:ital,wght@0,600;1,400&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: linear-gradient(135deg, #0f172a, #1e1b4b, #3b0764);
+            overflow: hidden;
+            height: 100vh;
+        }
+        .serif {
+            font-family: 'Playfair Display', serif;
+        }
+        .glass {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .heart-fall {
+            animation: fall linear forwards;
+            user-select: none;
+        }
+        @keyframes fall {
+            from { transform: translateY(-10vh) rotate(0deg); }
+            to { transform: translateY(110vh) rotate(360deg); }
+        }
+        .particle {
+            pointer-events: none;
+            position: absolute;
+            animation: pop 0.6s ease-out forwards;
+        }
+        @keyframes pop {
+            0% { transform: translate(0, 0) scale(1); opacity: 1; }
+            100% { transform: translate(var(--dx), var(--dy)) scale(0); opacity: 0; }
+        }
+        .toast-slide {
+            animation: slideIn 0.5s ease forwards, slideOut 0.5s ease 2.5s forwards;
+        }
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes slideOut {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
+        }
+        .gradient-text {
+            background: linear-gradient(to right, #f472b6, #fb7185, #ec4899);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+    </style>
+</head>
+<body class="text-white flex flex-col items-center justify-between p-6 relative">
+    <!-- BG Hearts -->
+    <div id="bg-hearts" class="absolute inset-0 pointer-events-none opacity-20"></div>
+    <!-- Header / Scoreboard -->
+    <div class="z-10 w-full max-w-md mx-auto text-center mt-4">
+        <h1 class="serif text-4xl md:text-5xl font-semibold mb-2 gradient-text">Catch the Hearts</h1>
+        <p class="text-slate-300 text-sm tracking-widest uppercase">Unlock the messages hidden inside</p>
+        
+        <div class="mt-6 glass rounded-2xl p-4 flex justify-between items-center">
+            <div class="text-left">
+                <p class="text-xs uppercase text-pink-300 font-semibold tracking-wider">Progress</p>
+                <p id="score-text" class="text-2xl font-bold">0 / 20</p>
+            </div>
+            <div class="w-2/3 bg-white/10 h-3 rounded-full overflow-hidden">
+                <div id="progress-bar" class="bg-gradient-to-right from-pink-500 to-rose-500 h-full w-0 transition-all duration-300"></div>
+            </div>
+        </div>
+    </div>
+    <!-- Gameplay Area -->
+    <div id="game-area" class="absolute inset-0 z-0"></div>
+    <!-- Toast Notifications Container -->
+    <div id="toast-container" class="absolute top-6 right-6 z-50 flex flex-col gap-3"></div>
+    <!-- END GAME OVERLAY MODAL -->
+    <div id="message-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+        <div class="glass w-full max-w-lg rounded-3xl p-6 md:p-8 flex flex-col relative max-h-[85vh] overflow-y-auto">
+            <div class="text-center mb-6">
+                <span class="text-pink-400 text-5xl">💖</span>
+                <h2 class="serif text-3xl font-bold mt-2 text-white">All Hearts Captured</h2>
+                <p class="text-slate-300 text-sm mt-1">You've unlocked all the messages.</p>
+            </div>
+            <!-- Tabs Nav -->
+            <div class="flex border-b border-white/10 text-sm mb-4 overflow-x-auto">
+                <button onclick="switchTab(0)" class="tab-btn px-4 py-2 text-pink-400 border-b-2 border-pink-400 transition-all duration-300 flex-shrink-0">Note 1</button>
+                <button onclick="switchTab(1)" class="tab-btn px-4 py-2 text-white/50 hover:text-white transition-all duration-300 flex-shrink-0">Note 2</button>
+                <button onclick="switchTab(2)" class="tab-btn px-4 py-2 text-white/50 hover:text-white transition-all duration-300 flex-shrink-0">Note 3</button>
+                <button onclick="switchTab(3)" class="tab-btn px-4 py-2 text-white/50 hover:text-white transition-all duration-300 flex-shrink-0">Secret</button>
+            </div>
+            <!-- Tab Content -->
+            <div id="tab-content" class="text-slate-200 text-base leading-relaxed serif italic text-center py-4 min-h-[120px]">
+                <!-- Dynamic content will be loaded here -->
+            </div>
+            <button onclick="closeModal()" class="mt-6 bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-[1.03] active:scale-[0.98] cursor-pointer">
+                Read Again
+            </button>
+            
+            <p class="text-center text-xs text-slate-400 mt-4">Made with ❤️ for you</p>
+        </div>
+    </div>
+    <!-- Audio Effects -->
+    <audio id="popSound" src="https://www.soundjay.com/buttons/sounds/button-16.mp3" preload="auto"></audio>
+    <audio id="unlockSound" src="https://www.soundjay.com/buttons/sounds/button-3.mp3" preload="auto"></audio>
+    <script>
+        const gameArea = document.getElementById('game-area');
+        const scoreText = document.getElementById('score-text');
+        const progressBar = document.getElementById('progress-bar');
+        const toastContainer = document.getElementById('toast-container');
+        const messageModal = document.getElementById('message-modal');
+        const tabContent = document.getElementById('tab-content');
+        const popSound = document.getElementById('popSound');
+        const unlockSound = document.getElementById('unlockSound');
+        let score = 0;
+        let gameOver = false;
+        let gameInterval;
+        let heartRate = 800; // milliseconds
+        const messages = [
+            "I won't lie, talking to you is actually something I look forward to. You have this calm vibe that makes everything feel easy and just flow naturally.",
+            "You really brightened up my day today. I don't know if you realize how easily you make me smile, but it's a super power you definitely possess. 😊",
+            "I love how I can completely be myself with you. There's no pressure, no judging, just us talking and laughing. It means more than I probably say out loud.",
+            "Okay, you win the game, so here is my full soft side... I appreciate you more than you know. Don't get used to me being this soft too often though 😏"
+        ];
+        // Milestone achievements
+        const milestones = {
+            5: "Level 1 Unlocked: You've got fast reflexes!",
+            10: "Level 2 Unlocked: You're doing great!",
+            15: "Level 3 Unlocked: Almost there, keep going!"
+        };
+        let currentTabIndex = 0;
+        function switchTab(index) {
+            currentTabIndex = index;
+            const buttons = document.querySelectorAll('.tab-btn');
+            buttons.forEach((btn, i) => {
+                if (i === index) {
+                    btn.classList.add('text-pink-400', 'border-pink-400');
+                    btn.classList.remove('text-white/50');
+                } else {
+                    btn.classList.remove('text-pink-400', 'border-pink-400');
+                    btn.classList.add('text-white/50');
+                }
+            });
+            tabContent.innerHTML = messages[index];
+            tabContent.classList.add('animate-fadeIn');
+            setTimeout(() => tabContent.classList.remove('animate-fadeIn'), 500);
+        }
+        // Create random background non-interactive floating hearts
+        function createBgHeart() {
+            const bgContainer = document.getElementById('bg-hearts');
+            const heart = document.createElement('div');
+            heart.innerHTML = "❤️";
+            heart.style.position = 'absolute';
+            heart.style.left = Math.random() * 100 + 'vw';
+            heart.style.bottom = '-5vh';
+            heart.style.fontSize = (Math.random() * 10 + 10) + 'px';
+            heart.style.opacity = Math.random() * 0.5;
+            
+            const duration = Math.random() * 5 + 5;
+            heart.style.transition = `transform ${duration}s linear, opacity ${duration}s linear`;
+            bgContainer.appendChild(heart);
+            setTimeout(() => {
+                heart.style.transform = `translateY(-110vh) translateX(${Math.random() * 50 - 25}px)`;
+                heart.style.opacity = 0;
+            }, 100);
+            setTimeout(() => {
+                heart.remove();
+            }, duration * 1000);
+        }
+        setInterval(createBgHeart, 1500);
+        function showToast(message) {
+            unlockSound.currentTime = 0;
+            unlockSound.play().catch(e => {});
+            const toast = document.createElement('div');
+            toast.className = 'glass text-white px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2 border-pink-500/30 toast-slide min-w-[250px]';
+            toast.innerHTML = `
+                <span class="text-xl">✨</span>
+                <div>
+                    <p class="text-sm font-semibold text-pink-300">New Milestone!</p>
+                    <p class="text-xs text-slate-200">${message}</p>
+                </div>
+            `;
+            toastContainer.appendChild(toast);
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
+        }
+        function createParticles(x, y) {
+            const colors = ['❤️', '💖', '✨', '🌸', '💕'];
+            for (let i = 0; i < 6; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle text-sm';
+                particle.innerHTML = colors[Math.floor(Math.random() * colors.length)];
+                particle.style.left = x + 'px';
+                particle.style.top = y + 'px';
+                
+                const dx = (Math.random() - 0.5) * 150;
+                const dy = (Math.random() - 0.5) * 150;
+                particle.style.setProperty('--dx', `${dx}px`);
+                particle.style.setProperty('--dy', `${dy}px`);
+                
+                document.body.appendChild(particle);
+                setTimeout(() => particle.remove(), 600);
+            }
+        }
+        function createHeart() {
+            if (gameOver) return;
+            const heart = document.createElement('div');
+            heart.className = 'heart-fall absolute cursor-pointer text-3xl md:text-4xl transition-transform active:scale-125';
+            
+            // Randomize heart type
+            const heartTypes = ['❤️', '💖', '💝', '💕', '💗'];
+            heart.innerHTML = heartTypes[Math.floor(Math.random() * heartTypes.length)];
+            
+            heart.style.left = (Math.random() * 85 + 5) + 'vw';
+            const duration = Math.random() * 2 + 3; // 3 to 5 seconds
+            heart.style.animationDuration = duration + 's';
+            gameArea.appendChild(heart);
+            const handleCatch = (e) => {
+                if (gameOver) return;
+                score++;
+                scoreText.innerText = score + " / 20";
+                
+                const progressWidth = (score / 20) * 100;
+                progressBar.style.width = progressWidth + "%";
+                popSound.currentTime = 0;
+                popSound.play().catch(e => {});
+                const rect = heart.getBoundingClientRect();
+                createParticles(rect.left + rect.width/2, rect.top + rect.height/2);
+                
+                heart.remove();
+                // Check for milestones
+                if (milestones[score]) {
+                    showToast(milestones[score]);
+                }
+                if (score >= 20) {
+                    endGame();
+                }
+            };
+            heart.addEventListener('mousedown', handleCatch);
+            heart.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                handleCatch(e);
+            });
+            setTimeout(() => {
+                if (heart.parentNode === gameArea) {
+                    heart.remove();
+                }
+            }, duration * 1000);
+        }
+        function endGame() {
+            gameOver = true;
+            clearInterval(gameInterval);
+            // Clear remaining hearts
+            gameArea.innerHTML = '';
+            // Open final display with tabs
+            setTimeout(() => {
+                switchTab(0);
+                messageModal.classList.remove('hidden');
+                messageModal.classList.add('flex');
+                
+                // Blast heavy confetti effect
+                for(let i=0; i<30; i++){
+                    setTimeout(() => {
+                        createParticles(window.innerWidth/2 + (Math.random()-0.5)*200, window.innerHeight/2 + (Math.random()-0.5)*200);
+                    }, i * 50);
+                }
+            }, 500);
+        }
+        function closeModal() {
+            // Option to keep playing/replay
+            messageModal.classList.add('hidden');
+            messageModal.classList.remove('flex');
+            
+            // Reset game
+            score = 0;
+            gameOver = false;
+            scoreText.innerText = "0 / 20";
+            progressBar.style.width = "0%";
+            gameInterval = setInterval(createHeart, heartRate);
+        }
+        // Start game
+        gameInterval = setInterval(createHeart, heartRate);
+    </script>
+</body>
+</html>
